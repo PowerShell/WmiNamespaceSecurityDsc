@@ -38,18 +38,18 @@ Using DSC, you can just write a configuration document such as this:
 
 Save this as a .ps1 file and "dot source" it to make the configuration available in your current scope:
 
-```powershell
+```powershell-console
 	. .\sample.ps1
 ```
 
 Execute the configuration function:
 
-```powershell
+```powershell-console
 	Sample -OutputPath c:\dsc
 ```
 
 Now, you can use DSC to deploy the configuration:
 
-```powershell
+```powershell-console
 	Start-DSCConfiguration -Path c:\dsc -Wait -Force
 ```
