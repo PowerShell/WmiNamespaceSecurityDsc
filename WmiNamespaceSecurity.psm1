@@ -1,5 +1,6 @@
 ﻿<#
     configuration Sample {
+		Import-DSCResource -ModuleName WmiNamespaceSecurity
 
         WMINamespaceSecurity Jason {
             Path = "root/cimv2"

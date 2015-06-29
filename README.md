@@ -14,6 +14,7 @@ Using DSC, you can just write a configuration document such as this:
 
 ```powershell
     configuration Sample {
+		Import-DSCResource -ModuleName WmiNamespaceSecurity
 
         WMINamespaceSecurity Jason {
             Path = "root/cimv2"
