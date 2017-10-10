@@ -23,19 +23,6 @@
     }
 #>
 
-Enum WMIPermission {
-    Enable = 1
-    MethodExecute = 2
-    FullWrite = 4
-    PartialWrite = 8
-    ProviderWrite = 0x10
-    RemoteAccess = 0x20
-    Subscribe = 0x40
-    Publish = 0x80
-    ReadSecurity = 0x20000
-    WriteSecurity = 0x40000
-}
-
 Enum Ensure {
     Present
     Absent
@@ -52,9 +39,10 @@ Enum AppliesTo {
 }
 
 Enum AceFlag {
+    None = 0x0
     ObjectInherit = 0x1
     ContainerInherit = 0x2
-    NoPropagate = 0x4
+    NoPropagateInherit = 0x4
     InheritOnly = 0x8
     Inherited = 0x10
 }
@@ -62,16 +50,21 @@ Enum AceFlag {
 [DSCResource()]
 class WMINamespaceSecurity {
     [DscProperty(Key)]
+    [ValidateNotNullOrEmpty()]
     [string] $Path
 
     [DscProperty(Key)]
+    [ValidateNotNullOrEmpty()]
     [string] $Principal
 
     [DscProperty(Key)]
+    [ValidateNotNullOrEmpty()]
     [string] $AccessType  #TODO: bug prevents using enum as key type
 
     [DscProperty()]
-    [WMIPermission[]] $Permission
+    [ValidateSet("Enable","MethodExecute","FullWrite","PartialWrite","ProviderWrite","RemoteAccess","Subscribe","Publish","ReadSecurity","WriteSecurity")]
+    [ValidateNotNullOrEmpty()]
+    [string[]] $Permission
 
     [DscProperty()]
     [AppliesTo] $AppliesTo = [AppliesTo]::Self
@@ -92,7 +85,7 @@ class WMINamespaceSecurity {
     }
 
     static [CimInstance] GetSecurityDescriptor([string] $Namespace) {
-        $systemSecurity = Get-CimInstance -Namespace $Namespace -ClassName __SystemSecurity  
+        $systemSecurity = Get-CimInstance -Namespace $Namespace -ClassName __SystemSecurity
         $output = Invoke-CimMethod -InputObject $systemSecurity -MethodName GetSecurityDescriptor
         return $output.Descriptor
     }
@@ -101,7 +94,7 @@ class WMINamespaceSecurity {
         [AccessType] $access = [AccessType]::Allow
         switch ($accessTypeName) { #TODO: fix once enum is supported as key type
             "Allow" {
-                $access = [AccessType]::Allow           
+                $access = [AccessType]::Allow
             }
 
             "Deny" {
@@ -155,28 +148,40 @@ class WMINamespaceSecurity {
                 }
             }
             [int] $accessmask = 0
+            $WMIPermission = @{
+                enable = 1;
+                methodexecute = 2;
+                fullwrite = 4;
+                partialwrite = 8;
+                providerwrite = 0x10;
+                remoteaccess = 0x20;
+                subscribe = 0x40;
+                publish = 0x80;
+                readsecurity = 0x20000;
+                writesecurity = 0x40000
+            }
             foreach ($permission in $this.Permission) {
-                $accessmask += $permission
+                $accessmask += [int]($WMIPermission[$permission.ToLower()])
             }
             $ace.AccessMask = $accessmask
             switch ($this.AppliesTo) {
                 "Self" {
-                    $ace.AceFlags = [AceFlag]::NoPropagate
+                    $ace.AceFlags = [AceFlag]::None
                 }
 
                 "Children" {
-                    $ace.AceFlags = [AceFlag]::ObjectInherit -bor [AceFlag]::ContainerInherit
+                    $ace.AceFlags = [AceFlag]::ContainerInherit
                 }
 
                 Default {
                     throw "Unknown AppliesTo"
                 }
             }
-                
+
             if ($index -ge 0) { # copy new ACE flags and accessmask over old one
                 $sd.DACL[$index].AceFlags = $ace.AceFlags
                 $sd.DACL[$index].AccessMask = $ace.AccessMask
-            } else { 
+            } else {
                 # insert to end, TODO: insert in front of Deny ACE
                 # resulting CIMInstance has a fixed size collection, so we can't just use the Add() method
                 [CIMInstance[]] $newDacl = $null
@@ -207,7 +212,7 @@ class WMINamespaceSecurity {
             throw "SetSecurityDescriptor failed with $($retVal.ReturnValue)"
         }
     }
-    
+
     [bool] Test() {
         $wmiNamespace = $this.Get()
         if ($this.Ensure -eq [Ensure]::Absent -and $wmiNamespace -eq $null)
@@ -223,18 +228,13 @@ class WMINamespaceSecurity {
         $ace, $index = [WMINamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
         if ($ace -ne $null) {
             $this.Inherited = ($ace.AceFlags -band [AceFlag]::Inherited)
-            switch ($ace.AceFlags) {
-                ([uint32]([AceFlag]::NoPropagate)) {
-                    $this.AppliesTo = [AppliesTo]::Self
-                }
-
-                ([uint32]([AceFlag]::ObjectInherit + [AceFlag]::ContainerInherit)) {
-                    $this.AppliesTo = [AppliesTo]::Children
-                }
-
-                Default {
-                    throw "Unknown AceFlags"
-                }
+            if ($ace.AceFlags -band [AceFlag]::ContainerInherit)
+            {
+                $this.AppliesTo = [AppliesTo]::Children
+            }
+            else
+            {
+                $this.AppliesTo = [AppliesTo]::Self
             }
             return $this
         } else {
