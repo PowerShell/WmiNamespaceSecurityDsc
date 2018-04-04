@@ -126,9 +126,6 @@ class WMINamespaceSecurity {
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($ace -eq $null) {
                 $domain, $user = [WMINamespaceSecurity]::SplitPrincipal($this.Principal)
-                if ($domain -eq [string]::Empty -or $domain -eq "BUILTIN") {
-                    $domain = $env:COMPUTERNAME
-                }
                 $ntuser = New-Object System.Security.Principal.NTAccount($domain,$user)
                 $trustee = New-CimInstance -Namespace root/cimv2 -ClassName Win32_Trustee -ClientOnly -Property @{Domain=$domain;Name=$user;
                     SidString=$ntuser.Translate([System.Security.Principal.SecurityIdentifier]).Value}
