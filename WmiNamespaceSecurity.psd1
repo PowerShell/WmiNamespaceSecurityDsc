@@ -4,7 +4,7 @@
 RootModule = 'WmiNamespaceSecurity.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.0'
+ModuleVersion = '0.3.0'
 
 # ID used to uniquely identify this module
 GUID = 'f41512fb-2661-4741-83bd-683b11013557'
