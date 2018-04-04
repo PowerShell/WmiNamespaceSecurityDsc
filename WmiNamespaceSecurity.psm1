@@ -215,7 +215,10 @@ class WMINamespaceSecurity {
         if ($this.Ensure -eq [Ensure]::Absent -and $wmiNamespace -eq $null)
         {
             return $true
-        } else {
+        } elseif ($this.Ensure -eq [Ensure]::Present -and $wmiNamespace -ne $null) {
+            return $true
+        } 
+        else {
             return $false
         }
     }
