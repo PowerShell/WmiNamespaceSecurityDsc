@@ -1,28 +1,3 @@
-﻿<#
-    configuration Sample {
-		Import-DSCResource -ModuleName WmiNamespaceSecurity
-
-        WMINamespaceSecurity Jason {
-            Path = "root/cimv2"
-            Principal = "Jason"
-            AppliesTo = "Self"
-            AccessType = "Allow"
-            Permission = "Enable", "MethodExecute", "ProviderWrite"
-            Ensure = "Present"
-        }
-
-        WMINamespaceSecurity Steve {
-            Path = "root/cimv2"
-            Principal = "Steve"
-            AppliesTo = "Children"
-            AccessType = "Deny"
-            Permission = "Enable", "MethodExecute", "ProviderWrite", "RemoteAccess"
-            Ensure = "Present"
-        }
-
-    }
-#>
-
 Enum Ensure {
     Present
     Absent
@@ -47,8 +22,21 @@ Enum AceFlag {
     Inherited = 0x10
 }
 
+Enum WmiPermission {
+    Enable = 1
+    MethodExecute = 2
+    FullWrite = 4
+    PartialWrite = 8
+    ProviderWrite = 0x10
+    RemoteAccess = 0x20
+    Subscribe = 0x40
+    Publish = 0x80
+    ReadSecurity = 0x20000
+    WriteSecurity = 0x40000
+}
+
 [DSCResource()]
-class WMINamespaceSecurity {
+class WmiNamespaceSecurity {
     [DscProperty(Key)]
     [ValidateNotNullOrEmpty()]
     [string] $Path
@@ -105,7 +93,7 @@ class WMINamespaceSecurity {
                 throw "Unknown AccessType: $accessTypeName"
             }
         }
-        $domain, $user = [WMINamespaceSecurity]::SplitPrincipal($principal)
+        $domain, $user = [WmiNamespaceSecurity]::SplitPrincipal($principal)
         $index = 0
         foreach ($ace in $acl) {
             $trustee = $ace.Trustee
@@ -118,14 +106,14 @@ class WMINamespaceSecurity {
     }
 
     [void] Set() {
-        $sd = [WMINamespaceSecurity]::GetSecurityDescriptor($this.Path)
+        $sd = [WmiNamespaceSecurity]::GetSecurityDescriptor($this.Path)
         [int] $index = -1
 
         #only support DACL for now, SACL support can be added in the future
-        $ace, $index = [WMINamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
+        $ace, $index = [WmiNamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($ace -eq $null) {
-                $domain, $user = [WMINamespaceSecurity]::SplitPrincipal($this.Principal)
+                $domain, $user = [WmiNamespaceSecurity]::SplitPrincipal($this.Principal)
                 $ntuser = New-Object System.Security.Principal.NTAccount($domain,$user)
                 $trustee = New-CimInstance -Namespace root/cimv2 -ClassName Win32_Trustee -ClientOnly -Property @{Domain=$domain;Name=$user;
                     SidString=$ntuser.Translate([System.Security.Principal.SecurityIdentifier]).Value}
@@ -216,27 +204,47 @@ class WMINamespaceSecurity {
         {
             return $true
         } elseif ($this.Ensure -eq [Ensure]::Present -and $wmiNamespace -ne $null) {
+            if ((Compare-Object -ReferenceObject $this.Permission -DifferenceObject $wmiNamespace.Permission))
+            {
+                Write-Verbose -Message ('Permission is not in desired state. Expected ''{0}'', but was ''{1}''.' -f ($this.Permission -join ''','''), ($wmiNamespace.Permission -join ''','''))
+                return $false
+            }
+            else
+            {
+                Write-Verbose -Message 'Permission is in desired state.'
+            }
+
             return $true
-        } 
+        }
         else {
             return $false
         }
     }
 
-    [WMINamespaceSecurity] Get() {
-        $sd = [WMINamespaceSecurity]::GetSecurityDescriptor($this.Path)
-        $ace, $index = [WMINamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
+    [WmiNamespaceSecurity] Get() {
+        $resultObject = [WmiNamespaceSecurity]::new()
+
+        $sd = [WmiNamespaceSecurity]::GetSecurityDescriptor($this.Path)
+        $ace, $index = [WmiNamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
         if ($ace -ne $null) {
-            $this.Inherited = ($ace.AceFlags -band [AceFlag]::Inherited)
+            $resultObject.Inherited = ($ace.AceFlags -band [AceFlag]::Inherited)
+
+            # Parse en WmiPermission enum to get an array of the current permission names.
+            $resultObject.Permission = [string[]] ([enum]::GetValues([WmiPermission]) | Where-Object -FilterScript {
+                $_.value__ -band $ace.AccessMask
+            })
+
+            Write-Verbose -Message ( "Current permission: '{0}'." -f ($resultObject.Permission -join ''','''))
+
             if ($ace.AceFlags -band [AceFlag]::ContainerInherit)
             {
-                $this.AppliesTo = [AppliesTo]::Children
+                $resultObject.AppliesTo = [AppliesTo]::Children
             }
             else
             {
-                $this.AppliesTo = [AppliesTo]::Self
+                $resultObject.AppliesTo = [AppliesTo]::Self
             }
-            return $this
+            return $resultObject
         } else {
             return $null
         }
