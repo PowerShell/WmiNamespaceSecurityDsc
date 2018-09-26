@@ -107,7 +107,7 @@ try
                 $resourceCurrentState.AccessType | Should -Be 'Allow'
                 $resourceCurrentState.Permission | Should -Be @('Enable', 'MethodExecute', 'ProviderWrite')
                 $resourceCurrentState.AppliesTo | Should -Be 'Self'
-                $resourceCurrentState.Inherited | Should -Be 'Something'
+                $resourceCurrentState.Inherited | Should -Be $false
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
