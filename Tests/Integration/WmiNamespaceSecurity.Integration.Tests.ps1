@@ -87,7 +87,6 @@ try
                 $ace.AccessMask | Should BeExactly ([uint32]($wmiperms::Enable + $wmiperms::MethodExecute + $wmiperms::ProviderWrite))
             }
 
-
             It 'Should be able to call Get-DscConfiguration without throwing' {
                 {
                     $script:currentConfiguration = Get-DscConfiguration -Verbose -ErrorAction Stop
@@ -100,7 +99,6 @@ try
                     -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
                 }
 
-                # TODO: Validate the Config was Set Correctly Here...
                 $resourceCurrentState.Ensure | Should -Be 'Present'
                 $resourceCurrentState.Path | Should -Be $nspath
                 $resourceCurrentState.Principal | Should -Be $testuser
@@ -146,6 +144,31 @@ try
                 $ace | Should Not BeNullOrEmpty
                 $ace.AccessMask | Should BeExactly ([uint32]($wmiperms::Enable + $wmiperms::ProviderWrite))
             }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                {
+                    $script:currentConfiguration = Get-DscConfiguration -Verbose -ErrorAction Stop
+                } | Should -Not -Throw
+            }
+
+            It 'Should have set the resource and all the parameters should match' {
+                $resourceCurrentState = $script:currentConfiguration | Where-Object -FilterScript {
+                    $_.ConfigurationName -eq $configurationName `
+                    -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
+                }
+
+                $resourceCurrentState.Ensure | Should -Be 'Present'
+                $resourceCurrentState.Path | Should -Be $nspath
+                $resourceCurrentState.Principal | Should -Be $testuser
+                $resourceCurrentState.AccessType | Should -Be 'Allow'
+                $resourceCurrentState.Permission | Should -Be @('Enable', 'ProviderWrite')
+                $resourceCurrentState.AppliesTo | Should -Be 'Self'
+                $resourceCurrentState.Inherited | Should -Be $false
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                Test-DscConfiguration -Verbose | Should -Be $true
+            }
         }
 
         $configurationName = "$($script:dcsResourceName)_RemovePermission_Config"
@@ -178,6 +201,31 @@ try
                 $ace, $index = $wminsclass::FindAce($sd.DACL, $testuser, "Allow")
                 $ace | Should BeNullOrEmpty
                 $index | Should BeExactly -1
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                {
+                    $script:currentConfiguration = Get-DscConfiguration -Verbose -ErrorAction Stop
+                } | Should -Not -Throw
+            }
+
+            It 'Should have set the resource and all the parameters should match' {
+                $resourceCurrentState = $script:currentConfiguration | Where-Object -FilterScript {
+                    $_.ConfigurationName -eq $configurationName `
+                    -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
+                }
+
+                #$resourceCurrentState.Ensure | Should -Be 'Absent'
+                $resourceCurrentState.Path | Should -Be $nspath
+                $resourceCurrentState.Principal | Should -BeNullOrEmpty
+                $resourceCurrentState.AccessType | Should -BeNullOrEmpty
+                $resourceCurrentState.Permission | Should -BeNullOrEmpty
+                $resourceCurrentState.AppliesTo | Should -Be 'Self'
+                $resourceCurrentState.Inherited | Should -Be $false
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                Test-DscConfiguration -Verbose | Should -Be $true
             }
         }
     }

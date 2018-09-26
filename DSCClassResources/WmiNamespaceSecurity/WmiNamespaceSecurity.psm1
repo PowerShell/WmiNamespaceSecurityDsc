@@ -233,6 +233,7 @@ class WmiNamespaceSecurity {
         $ace, $index = [WmiNamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
         if ($ace -ne $null)
         {
+            $resultObject.Ensure = [Ensure]::Present
             $resultObject.Principal = $this.Principal
             $resultObject.AccessType = $this.AccessType
             $resultObject.Inherited = ($ace.AceFlags -band [AceFlag]::Inherited)
@@ -254,6 +255,7 @@ class WmiNamespaceSecurity {
             }
             return $resultObject
         } else {
+            $resultObject.Ensure = [Ensure]::Absent
             return $null
         }
     }
