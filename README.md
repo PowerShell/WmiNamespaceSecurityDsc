@@ -70,8 +70,9 @@ Windows Server 2008 R2 SP1, Windows Server 2012 and Windows Server 2012 R2.
 
 ## Examples
 
-You can review the [Examples](/Examples) directory in the SqlServerDsc module
-for some general use scenarios for all of the resources that are in the module.
+You can review the [Examples](/Examples) directory in the WmiNamespaceSecurityDsc
+repository for some general use scenarios for all of the resources that are in the
+resource module.
 
 ## Change log
 
