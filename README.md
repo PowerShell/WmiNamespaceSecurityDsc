@@ -108,3 +108,4 @@ It will also manage the Availability Group replica on the specified node.
 #### Examples
 
 * [Add permission to namespace](/Examples/Resources/WmiNamespaceSecurity/1-AddPermissionToNamespace.ps1)
+* [Remove permission from namespace](/Examples/Resources/WmiNamespaceSecurity/2-RemovePermissionFromNamespace.ps1)
