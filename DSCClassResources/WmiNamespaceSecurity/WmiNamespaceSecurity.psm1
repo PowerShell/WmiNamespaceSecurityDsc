@@ -227,7 +227,7 @@ class WmiNamespaceSecurity {
         $sd = [WmiNamespaceSecurity]::GetSecurityDescriptor($this.Path)
         if ($sd)
         {
-            $resultObject.Principal = $this.Path
+            $resultObject.Path = $this.Path
         }
 
         $ace, $index = [WmiNamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
