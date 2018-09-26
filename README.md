@@ -21,7 +21,7 @@ PowerShell.
 
 ### master
 
-[![Build status](https://ci.appveyor.com/api/projects/status/000000000000/branch/master?svg=true)](https://ci.appveyor.com/project/PowerShell/WmiNamespaceSecurityDsc/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/jy76xinfr4fgunaj/branch/master?svg=true)](https://ci.appveyor.com/project/PowerShell/WmiNamespaceSecurityDsc/branch/master)
 [![codecov](https://codecov.io/gh/PowerShell/WmiNamespaceSecurityDsc/branch/master/graph/badge.svg)](https://codecov.io/gh/PowerShell/WmiNamespaceSecurityDsc/branch/master)
 
 This is the branch containing the latest release -
@@ -29,7 +29,7 @@ no contributions should be made directly to this branch.
 
 ### dev
 
-[![Build status](https://ci.appveyor.com/api/projects/status/000000000000/branch/dev?svg=true)](https://ci.appveyor.com/project/PowerShell/WmiNamespaceSecurityDsc/branch/dev)
+[![Build status](https://ci.appveyor.com/api/projects/status/jy76xinfr4fgunaj/branch/dev?svg=true)](https://ci.appveyor.com/project/PowerShell/WmiNamespaceSecurityDsc/branch/dev)
 [![codecov](https://codecov.io/gh/PowerShell/WmiNamespaceSecurityDsc/branch/dev/graph/badge.svg)](https://codecov.io/gh/PowerShell/WmiNamespaceSecurityDsc/branch/dev)
 
 This is the development branch
