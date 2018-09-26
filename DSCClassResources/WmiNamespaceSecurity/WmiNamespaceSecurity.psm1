@@ -1,19 +1,23 @@
-Enum Ensure {
+Enum Ensure
+{
     Present
     Absent
 }
 
-Enum AccessType {
+Enum AccessType
+{
     Allow = 0
     Deny = 1
 }
 
-Enum AppliesTo {
+Enum AppliesTo
+{
     Self
     Children
 }
 
-Enum AceFlag {
+Enum AceFlag
+{
     None = 0x0
     ObjectInherit = 0x1
     ContainerInherit = 0x2
@@ -22,7 +26,8 @@ Enum AceFlag {
     Inherited = 0x10
 }
 
-Enum WmiPermission {
+Enum WmiPermission
+{
     Enable = 1
     MethodExecute = 2
     FullWrite = 4
@@ -36,7 +41,8 @@ Enum WmiPermission {
 }
 
 [DSCResource()]
-class WmiNamespaceSecurity {
+class WmiNamespaceSecurity
+{
     [DscProperty(Key)]
     [ValidateNotNullOrEmpty()]
     [string] $Path
@@ -50,7 +56,7 @@ class WmiNamespaceSecurity {
     [string] $AccessType  #TODO: bug prevents using enum as key type
 
     [DscProperty()]
-    [ValidateSet("Enable","MethodExecute","FullWrite","PartialWrite","ProviderWrite","RemoteAccess","Subscribe","Publish","ReadSecurity","WriteSecurity")]
+    [ValidateSet("Enable", "MethodExecute", "FullWrite", "PartialWrite", "ProviderWrite", "RemoteAccess", "Subscribe", "Publish", "ReadSecurity", "WriteSecurity")]
     [ValidateNotNullOrEmpty()]
     [string[]] $Permission
 
@@ -63,41 +69,54 @@ class WmiNamespaceSecurity {
     [DscProperty(NotConfigurable)]
     [bool] $Inherited
 
-    static [string[]] SplitPrincipal([string] $Principal) {
+    static [string[]] SplitPrincipal([string] $Principal)
+    {
         $domain = $env:COMPUTERNAME
-        if ($Principal.Contains("\")) {
+        if ($Principal.Contains("\"))
+        {
             return $Principal.Split("\")
-        } else {
+        }
+        else
+        {
             return $domain, $Principal
         }
     }
 
-    static [CimInstance] GetSecurityDescriptor([string] $Namespace) {
+    static [CimInstance] GetSecurityDescriptor([string] $Namespace)
+    {
         $systemSecurity = Get-CimInstance -Namespace $Namespace -ClassName __SystemSecurity
         $output = Invoke-CimMethod -InputObject $systemSecurity -MethodName GetSecurityDescriptor
         return $output.Descriptor
     }
 
-    static [Object] FindAce([CimInstance[]] $acl, [string] $principal, [string] $accessTypeName) {
+    static [Object] FindAce([CimInstance[]] $acl, [string] $principal, [string] $accessTypeName)
+    {
         [AccessType] $access = [AccessType]::Allow
-        switch ($accessTypeName) { #TODO: fix once enum is supported as key type
-            "Allow" {
+        switch ($accessTypeName)
+        {
+            #TODO: fix once enum is supported as key type
+            "Allow"
+            {
                 $access = [AccessType]::Allow
             }
 
-            "Deny" {
+            "Deny"
+            {
                 $access = [AccessType]::Deny
             }
 
-            default {
+            default
+            {
                 throw "Unknown AccessType: $accessTypeName"
             }
         }
         $domain, $user = [WmiNamespaceSecurity]::SplitPrincipal($principal)
         $index = 0
-        foreach ($ace in $acl) {
+        foreach ($ace in $acl)
+        {
             $trustee = $ace.Trustee
-            if ($trustee.Domain -eq $domain -and $trustee.Name -eq $user -and $ace.AceType -eq $access) {
+            if ($trustee.Domain -eq $domain -and $trustee.Name -eq $user -and $ace.AceType -eq $access)
+            {
                 return $ace, $index
             }
             $index ++
@@ -105,105 +124,135 @@ class WmiNamespaceSecurity {
         return $null, -1
     }
 
-    [void] Set() {
+    [void] Set()
+    {
         $sd = [WmiNamespaceSecurity]::GetSecurityDescriptor($this.Path)
         [int] $index = -1
 
         #only support DACL for now, SACL support can be added in the future
         $ace, $index = [WmiNamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($ace -eq $null) {
+        if ($this.Ensure -eq [Ensure]::Present)
+        {
+            if ($ace -eq $null)
+            {
                 $domain, $user = [WmiNamespaceSecurity]::SplitPrincipal($this.Principal)
-                $ntuser = New-Object System.Security.Principal.NTAccount($domain,$user)
-                $trustee = New-CimInstance -Namespace root/cimv2 -ClassName Win32_Trustee -ClientOnly -Property @{Domain=$domain;Name=$user;
-                    SidString=$ntuser.Translate([System.Security.Principal.SecurityIdentifier]).Value}
-                $ace = New-CimInstance -Namespace root/cimv2 -ClassName Win32_Ace  -ClientOnly -Property @{AceType=[uint32]0;Trustee=$trustee;AccessMask=[uint32]0;AceFlags=[uint32]0}
-                switch ($this.AccessType) { #TODO: fix once enum is supported as key type
-                    "Allow" {
+                $ntuser = New-Object System.Security.Principal.NTAccount($domain, $user)
+                $trustee = New-CimInstance -Namespace root/cimv2 -ClassName Win32_Trustee -ClientOnly -Property @{Domain = $domain; Name = $user;
+                    SidString = $ntuser.Translate([System.Security.Principal.SecurityIdentifier]).Value
+                }
+                $ace = New-CimInstance -Namespace root/cimv2 -ClassName Win32_Ace  -ClientOnly -Property @{AceType = [uint32]0; Trustee = $trustee; AccessMask = [uint32]0; AceFlags = [uint32]0}
+                switch ($this.AccessType)
+                {
+                    #TODO: fix once enum is supported as key type
+                    "Allow"
+                    {
                         $ace.AceType = [int]([AccessType]::Allow)
                     }
 
-                    "Deny" {
+                    "Deny"
+                    {
                         $ace.AceType = [int]([AccessType]::Deny)
                     }
 
-                    default {
+                    default
+                    {
                         throw "Unknown AccessType: $($this.AccessType)"
                     }
                 }
             }
             [int] $accessmask = 0
             $WMIPermission = @{
-                enable = 1;
-                methodexecute = 2;
-                fullwrite = 4;
-                partialwrite = 8;
-                providerwrite = 0x10;
-                remoteaccess = 0x20;
-                subscribe = 0x40;
-                publish = 0x80;
-                readsecurity = 0x20000;
+                enable        = 1
+                methodexecute = 2
+                fullwrite     = 4
+                partialwrite  = 8
+                providerwrite = 0x10
+                remoteaccess  = 0x20
+                subscribe     = 0x40
+                publish       = 0x80
+                readsecurity  = 0x20000
                 writesecurity = 0x40000
             }
-            foreach ($permission in $this.Permission) {
+            foreach ($permission in $this.Permission)
+            {
                 $accessmask += [int]($WMIPermission[$permission.ToLower()])
             }
             $ace.AccessMask = $accessmask
-            switch ($this.AppliesTo) {
-                "Self" {
+            switch ($this.AppliesTo)
+            {
+                "Self"
+                {
                     $ace.AceFlags = [AceFlag]::None
                 }
 
-                "Children" {
+                "Children"
+                {
                     $ace.AceFlags = [AceFlag]::ContainerInherit
                 }
 
-                Default {
+                Default
+                {
                     throw "Unknown AppliesTo"
                 }
             }
 
-            if ($index -ge 0) { # copy new ACE flags and accessmask over old one
+            if ($index -ge 0)
+            {
+                # copy new ACE flags and accessmask over old one
                 $sd.DACL[$index].AceFlags = $ace.AceFlags
                 $sd.DACL[$index].AccessMask = $ace.AccessMask
-            } else {
+            }
+            else
+            {
                 # insert to end, TODO: insert in front of Deny ACE
                 # resulting CIMInstance has a fixed size collection, so we can't just use the Add() method
                 [CIMInstance[]] $newDacl = $null
-                foreach ($existingAce in $sd.DACL) {
+                foreach ($existingAce in $sd.DACL)
+                {
                     $newDacl += $existingAce
                 }
                 $newDacl += $ace
                 $sd.DACL = $newDacl
             }
-        } elseif ($this.Ensure -eq [Ensure]::Absent) {
-            if ($ace -ne $null) {
+        }
+        elseif ($this.Ensure -eq [Ensure]::Absent)
+        {
+            if ($ace -ne $null)
+            {
                 # remove the Ace since it exists
                 [CIMInstance[]] $newDacl = $null
-                for ($i = 0; $i -lt $sd.DACL.Count; $i++) {
-                    if ($i -ne $index) {
+                for ($i = 0; $i -lt $sd.DACL.Count; $i++)
+                {
+                    if ($i -ne $index)
+                    {
                         $newDacl += $sd.DACL[$i]
                     }
                 }
                 $sd.DACL = $newDacl
             }
-        } else {
+        }
+        else
+        {
             throw "Unknown value '$($this.Ensure)' for Ensure"
         }
 
         $systemSecurity = Get-CimInstance -Namespace $this.Path __systemsecurity
         $retVal = Invoke-CimMethod -InputObject $systemSecurity -MethodName SetSecurityDescriptor -Arguments @{ Descriptor = $sd }
-        if ($retVal.ReturnValue -ne 0) {
+        if ($retVal.ReturnValue -ne 0)
+        {
             throw "SetSecurityDescriptor failed with $($retVal.ReturnValue)"
         }
     }
 
-    [bool] Test() {
+    [bool] Test()
+    {
         $wmiNamespace = $this.Get()
         if ($this.Ensure -eq [Ensure]::Absent -and $wmiNamespace -eq $null)
         {
             return $true
-        } elseif ($this.Ensure -eq [Ensure]::Present -and $wmiNamespace -ne $null) {
+        }
+        elseif ($this.Ensure -eq [Ensure]::Present -and $wmiNamespace -ne $null)
+        {
             if ((Compare-Object -ReferenceObject $this.Permission -DifferenceObject $wmiNamespace.Permission))
             {
                 Write-Verbose -Message ('Permission is not in desired state. Expected ''{0}'', but was ''{1}''.' -f ($this.Permission -join ''','''), ($wmiNamespace.Permission -join ''','''))
@@ -216,12 +265,14 @@ class WmiNamespaceSecurity {
 
             return $true
         }
-        else {
+        else
+        {
             return $false
         }
     }
 
-    [WmiNamespaceSecurity] Get() {
+    [WmiNamespaceSecurity] Get()
+    {
         $resultObject = [WmiNamespaceSecurity]::new()
 
         $sd = [WmiNamespaceSecurity]::GetSecurityDescriptor($this.Path)
@@ -240,8 +291,8 @@ class WmiNamespaceSecurity {
 
             # Parse en WmiPermission enum to get an array of the current permission names.
             $resultObject.Permission = [string[]] ([enum]::GetValues([WmiPermission]) | Where-Object -FilterScript {
-                $_.value__ -band $ace.AccessMask
-            })
+                    $_.value__ -band $ace.AccessMask
+                })
 
             Write-Verbose -Message ( "Current permission: '{0}'." -f ($resultObject.Permission -join ''','''))
 
@@ -253,10 +304,12 @@ class WmiNamespaceSecurity {
             {
                 $resultObject.AppliesTo = [AppliesTo]::Self
             }
-            return $resultObject
-        } else {
-            $resultObject.Ensure = [Ensure]::Absent
-            return $null
         }
+        else
+        {
+            $resultObject.Ensure = [Ensure]::Absent
+        }
+
+        return $resultObject
     }
 }
