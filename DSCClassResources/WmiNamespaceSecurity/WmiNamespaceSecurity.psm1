@@ -247,11 +247,11 @@ class WmiNamespaceSecurity
     [bool] Test()
     {
         $wmiNamespace = $this.Get()
-        if ($this.Ensure -eq [Ensure]::Absent -and $wmiNamespace -eq $null)
+        if ($this.Ensure -eq [Ensure]::Absent -and $wmiNamespace.Ensure -eq $this.Ensure)
         {
             return $true
         }
-        elseif ($this.Ensure -eq [Ensure]::Present -and $wmiNamespace -ne $null)
+        elseif ($this.Ensure -eq [Ensure]::Present -and $wmiNamespace.Ensure -eq $this.Ensure)
         {
             if ((Compare-Object -ReferenceObject $this.Permission -DifferenceObject $wmiNamespace.Permission))
             {
