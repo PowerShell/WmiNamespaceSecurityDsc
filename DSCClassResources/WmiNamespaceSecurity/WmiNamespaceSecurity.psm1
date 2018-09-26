@@ -225,8 +225,16 @@ class WmiNamespaceSecurity {
         $resultObject = [WmiNamespaceSecurity]::new()
 
         $sd = [WmiNamespaceSecurity]::GetSecurityDescriptor($this.Path)
+        if ($sd)
+        {
+            $resultObject.Principal = $this.Path
+        }
+
         $ace, $index = [WmiNamespaceSecurity]::FindAce($sd.DACL, $this.Principal, $this.AccessType)
-        if ($ace -ne $null) {
+        if ($ace -ne $null)
+        {
+            $resultObject.Principal = $this.Principal
+            $resultObject.AccessType = $this.AccessType
             $resultObject.Inherited = ($ace.AceFlags -band [AceFlag]::Inherited)
 
             # Parse en WmiPermission enum to get an array of the current permission names.

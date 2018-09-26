@@ -38,7 +38,7 @@ Configuration WmiNamespaceSecurity_SetPermission_Config
         WmiNamespaceSecurity Integration_Test
         {
             Path = $Node.NamespacePath
-            AppliesTo = 'self'
+            AppliesTo = 'Self'
             Principal = $Node.TestUserName
             AccessType = 'Allow'
             Permission = 'Enable', 'MethodExecute', 'ProviderWrite'
@@ -60,7 +60,7 @@ Configuration WmiNamespaceSecurity_ChangePermission_Config
         WmiNamespaceSecurity Integration_Test
         {
             Path = $Node.NamespacePath
-            AppliesTo = 'self'
+            AppliesTo = 'Self'
             Principal = $Node.TestUserName
             AccessType = 'Allow'
             Permission = 'Enable', 'ProviderWrite'

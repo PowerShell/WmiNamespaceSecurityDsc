@@ -86,6 +86,33 @@ try
                 $ace | Should Not BeNullOrEmpty
                 $ace.AccessMask | Should BeExactly ([uint32]($wmiperms::Enable + $wmiperms::MethodExecute + $wmiperms::ProviderWrite))
             }
+
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                {
+                    $script:currentConfiguration = Get-DscConfiguration -Verbose -ErrorAction Stop
+                } | Should -Not -Throw
+            }
+
+            It 'Should have set the resource and all the parameters should match' {
+                $resourceCurrentState = $script:currentConfiguration | Where-Object -FilterScript {
+                    $_.ConfigurationName -eq $configurationName `
+                    -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
+                }
+
+                # TODO: Validate the Config was Set Correctly Here...
+                $resourceCurrentState.Ensure | Should -Be 'Present'
+                $resourceCurrentState.Path | Should -Be $nspath
+                $resourceCurrentState.Principal | Should -Be $testuser
+                $resourceCurrentState.AccessType | Should -Be 'Allow'
+                $resourceCurrentState.Permission | Should -Be @('Enable', 'MethodExecute', 'ProviderWrite')
+                $resourceCurrentState.AppliesTo | Should -Be 'Self'
+                $resourceCurrentState.Inherited | Should -Be 'Something'
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                Test-DscConfiguration -Verbose | Should -Be $true
+            }
         }
 
         $configurationName = "$($script:dcsResourceName)_ChangePermission_Config"
