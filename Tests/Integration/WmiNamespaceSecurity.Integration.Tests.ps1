@@ -2,6 +2,16 @@ $script:dscModuleName = 'WmiNamespaceSecurityDsc'
 $script:dscResourceFriendlyName = 'WmiNamespaceSecurity'
 $script:dcsResourceName = $script:dscResourceFriendlyName
 
+<#
+    Remove any existing loaded modules in the session. The module will
+    be re-imported by the Initialize-TestEnvironment.
+    If there are duplicate modules imported into the session, the line
+    47-54 will fail, since Get-Module will return multiple versions.
+    It could return duplicate version due to the Examples that get published
+    import it into the session too.
+#>
+Get-Module -Name WmiNamespaceSecurityDsc -All | Remove-Module -Force
+
 #region HEADER
 # Integration Test Template Version: 1.3.1
 [String] $script:moduleRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -31,23 +41,30 @@ try
     $testuserPassword = $ConfigurationData.AllNodes.TestUserPassword
 
     $principal = New-Object Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())
-    if (!$principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    if (!$principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator))
+    {
         throw "These tests require an elevated PowerShell session"
     }
 
-    # used to access the type until types export is supported
-    . (Get-module WmiNamespaceSecurityDsc) { set-variable -name wminsclass -value ([type]"WmiNamespaceSecurity") -scope 1 }
-    . (Get-module WmiNamespaceSecurityDsc) { set-variable -name wmiperms -value ([type]"WmiPermission") -scope 1 }
+    # Used to access the type until types export is supported
+    . (Get-Module -Name WmiNamespaceSecurityDsc) {
+        Set-Variable -Name wminsclass -Value ([type]"WmiNamespaceSecurity") -Scope 1
+    }
+
+    . (Get-Module -Name WmiNamespaceSecurityDsc) {
+        Set-Variable -Name wmiperms -Value ([type]"WmiPermission") -Scope 1
+    }
 
     Describe "Set WMI Namespace Security" {
         BeforeAll {
             net user $testuser /delete 2> $null
             net user $testuser $testuserPassword /add 2> $null
             $ns = Get-CimInstance -Namespace root -ClassName __namespace -Filter "Name='$nsname'"
-            if ($ns -ne $Null) {
+            if ($ns -ne $Null)
+            {
                 $ns | Remove-CimInstance
             }
-            New-CimInstance -Namespace "root" -ClassName __namespace -Property @{Name=$nsname}
+            New-CimInstance -Namespace "root" -ClassName __namespace -Property @{Name = $nsname}
         }
 
         AfterAll {
@@ -61,8 +78,8 @@ try
             It 'Should compile and apply the MOF without throwing' {
                 {
                     $configurationParameters = @{
-                        OutputPath           = $TestDrive
-                        ConfigurationData    = $ConfigurationData
+                        OutputPath        = $TestDrive
+                        ConfigurationData = $ConfigurationData
                     }
 
                     & $configurationName @configurationParameters
@@ -96,7 +113,7 @@ try
             It 'Should have set the resource and all the parameters should match' {
                 $resourceCurrentState = $script:currentConfiguration | Where-Object -FilterScript {
                     $_.ConfigurationName -eq $configurationName `
-                    -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
+                        -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
                 }
 
                 $resourceCurrentState.Ensure | Should -Be 'Present'
@@ -119,8 +136,8 @@ try
             It 'Should compile and apply the MOF without throwing' {
                 {
                     $configurationParameters = @{
-                        OutputPath           = $TestDrive
-                        ConfigurationData    = $ConfigurationData
+                        OutputPath        = $TestDrive
+                        ConfigurationData = $ConfigurationData
                     }
 
                     & $configurationName @configurationParameters
@@ -154,7 +171,7 @@ try
             It 'Should have set the resource and all the parameters should match' {
                 $resourceCurrentState = $script:currentConfiguration | Where-Object -FilterScript {
                     $_.ConfigurationName -eq $configurationName `
-                    -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
+                        -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
                 }
 
                 $resourceCurrentState.Ensure | Should -Be 'Present'
@@ -177,8 +194,8 @@ try
             It 'Should compile and apply the MOF without throwing' {
                 {
                     $configurationParameters = @{
-                        OutputPath           = $TestDrive
-                        ConfigurationData    = $ConfigurationData
+                        OutputPath        = $TestDrive
+                        ConfigurationData = $ConfigurationData
                     }
 
                     & $configurationName @configurationParameters
@@ -212,7 +229,7 @@ try
             It 'Should have set the resource and all the parameters should match' {
                 $resourceCurrentState = $script:currentConfiguration | Where-Object -FilterScript {
                     $_.ConfigurationName -eq $configurationName `
-                    -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
+                        -and $_.ResourceId -eq "[$($script:dscResourceFriendlyName)]Integration_Test"
                 }
 
                 #$resourceCurrentState.Ensure | Should -Be 'Absent'
