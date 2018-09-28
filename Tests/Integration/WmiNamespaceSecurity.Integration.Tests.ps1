@@ -2,6 +2,16 @@ $script:dscModuleName = 'WmiNamespaceSecurityDsc'
 $script:dscResourceFriendlyName = 'WmiNamespaceSecurity'
 $script:dcsResourceName = $script:dscResourceFriendlyName
 
+<#
+    Remove any existing loaded modules in the session. The module will
+    be re-imported by the Initialize-TestEnvironment.
+    If there are duplicate modules imported into the session, the line
+    47-54 will fail, since Get-Module will return multiple versions.
+    It could return duplicate version due to the Examples that get published
+    import it into the session too.
+#>
+Get-Module -Name WmiNamespaceSecurityDsc -All | Remove-Module -Force
+
 #region HEADER
 # Integration Test Template Version: 1.3.1
 [String] $script:moduleRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -36,9 +46,14 @@ try
         throw "These tests require an elevated PowerShell session"
     }
 
-    # used to access the type until types export is supported
-    . (Get-Module WmiNamespaceSecurityDsc) { set-variable -name wminsclass -value ([type]"WmiNamespaceSecurity") -scope 1 }
-    . (Get-Module WmiNamespaceSecurityDsc) { set-variable -name wmiperms -value ([type]"WmiPermission") -scope 1 }
+    # Used to access the type until types export is supported
+    . (Get-Module -Name WmiNamespaceSecurityDsc) {
+        Set-Variable -Name wminsclass -Value ([type]"WmiNamespaceSecurity") -Scope 1
+    }
+
+    . (Get-Module -Name WmiNamespaceSecurityDsc) {
+        Set-Variable -Name wmiperms -Value ([type]"WmiPermission") -Scope 1
+    }
 
     Describe "Set WMI Namespace Security" {
         BeforeAll {
