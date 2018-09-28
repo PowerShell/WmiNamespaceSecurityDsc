@@ -15,7 +15,7 @@
 .PRIVATEDATA 2016-Datacenter,2016-Datacenter-Server-Core
 #>
 
-#Requires -module @{ModuleName = 'WmiNamespaceSecurityDsc';ModuleVersion = '1.0.0.0'}
+#Requires -module WmiNamespaceSecurityDsc
 
 <#
     .SYNOPSIS
