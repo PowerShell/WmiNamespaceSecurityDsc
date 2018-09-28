@@ -107,5 +107,9 @@ It will also manage the Availability Group replica on the specified node.
 
 #### Examples
 
-* [Add permission to namespace](/Examples/Resources/WmiNamespaceSecurity/1-AddPermissionToNamespace.ps1)
-* [Remove permission from namespace](/Examples/Resources/WmiNamespaceSecurity/2-RemovePermissionFromNamespace.ps1)
+* [Add permission for two accounts to WMI namespace](/Examples/Resources/WmiNamespaceSecurity/1-AddPermissionToNamespace.ps1)
+* [Remove two accounts from WMI namespace](/Examples/Resources/WmiNamespaceSecurity/2-RemovePermissionFromNamespace.ps1)
+* [Add permission to WMI namespace](/Examples/Resources/WmiNamespaceSecurity/3-WmiNamespaceSecurity_AddPermissionToWmiNamespaceConfig.ps1)
+  *(Published to PowerShell Gallery)*
+* [Remove account from WMI namespace](/Examples/Resources/WmiNamespaceSecurity/4-WmiNamespaceSecurity_RemovePermissionFromWmiNamespaceConfig.ps1)
+  *(Published to PowerShell Gallery)*
