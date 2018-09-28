@@ -1,4 +1,4 @@
-# Change log for {ModuleName}
+# Change log for WmiNamespaceSecurityDsc
 
 ## Unreleased
 
